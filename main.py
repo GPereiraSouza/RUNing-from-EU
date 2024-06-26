@@ -35,10 +35,6 @@ clock = pygame.time.Clock()
 car_folder = 'cars'
 car_colors = ['car1.png', 'car2.png', 'car3.png', 'car4.png', 'car5.png']
 
-# Flag image paths
-flag_folder = 'flags'
-flag_images = ['austria.png', 'belgium.png', 'finland.png', 'hungarian.png', 'ireland.png', 'netherland.png', 'portugal.png', 'spain.png']
-
 # Load car images
 def load_car_images():
     cars = {}
@@ -58,18 +54,25 @@ def load_car_images():
             return None
     return cars
 
-# Load flag images
+
+# Load obstacle images (flags)
 def load_flag_images():
+    flag_names = ['austria.png', 'belgium.png', 'finland.png', 'hungarian.png', 'ireland.png', 'netherland.png', 'portugal.png', 'spain.png']
     flags = []
-    for filename in flag_images:
-        flag_path = os.path.join(flag_folder, filename)
+    flag_folder = 'flags'  # Atualizado para a pasta correta
+    for flag_name in flag_names:
+        flag_path = os.path.join(flag_folder, flag_name)
         if os.path.isfile(flag_path):
             try:
                 flag_image = pygame.image.load(flag_path).convert_alpha()
+                flag_image = pygame.transform.scale(flag_image, (100, 100))  # Ensure the flags are 100x100
                 flags.append(flag_image)
             except pygame.error as e:
-                print(f"Error loading flag image {filename}: {e}")
+                print(f"Error loading flag image {flag_name}: {e}")
+        else:
+            print(f"Flag image {flag_name} not found in {flag_folder}")
     return flags
+
 
 # Display car on screen
 def car(x, y, car_image):
@@ -133,46 +136,6 @@ def intro_screen():
 
         if button("New Game", display_width / 2 - 100, display_height - 100, 200, 50, green, blue):
             game_loop()
-        
-        if button("Show All Scores", display_width / 2 - 100, display_height - 200, 200, 50, green, blue):
-            show_all_scores()
-
-        pygame.display.update()
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
-
-# Show all scores screen
-def show_all_scores():
-    showing_scores = True
-    while showing_scores:
-        game_display.fill(white)
-        large_text = pygame.font.Font('freesansbold.ttf', 40)
-        text_surface = large_text.render("All Scores:", True, black)
-        text_rect = text_surface.get_rect()
-        text_rect.center = ((display_width / 2), (display_height / 3 - 100))
-        game_display.blit(text_surface, text_rect)
-
-        scores = load_scores('scores.json')
-        if scores:
-            text_y = display_height / 3.5
-            for username, score in scores:
-                score_text = f'{username}: {float(score):.2f} s'
-                score_surface = large_text.render(score_text, True, black)
-                score_rect = score_surface.get_rect()
-                score_rect.center = ((display_width / 2), text_y)
-                game_display.blit(score_surface, score_rect)
-                text_y += 50
-        else:
-            no_score_text = 'No previous games recorded.'
-            no_score_surface = large_text.render(no_score_text, True, black)
-            no_score_rect = no_score_surface.get_rect()
-            no_score_rect.center = ((display_width / 2), (display_height / 2))
-            game_display.blit(no_score_surface, no_score_rect)
-
-        if button("Back", display_width / 2 - 100, display_height - 100, 200, 50, red, blue):
-            showing_scores = False
 
         pygame.display.update()
         for event in pygame.event.get():
@@ -208,13 +171,20 @@ def game_loop():
     x = (display_width - car_width) // 2
     y = display_height * 0.8
 
+    # Load flag images
+    flag_images = load_flag_images()
+    if not flag_images:
+        print("No flag images found. Exiting.")
+        pygame.quit()
+        quit()
+
+    # Initialize obstacle with a random flag image
+    obstacle_image = random.choice(flag_images)
     obstacle_start_x = random.randrange(int(road_x), int(road_x) + road_width - 100)
     obstacle_start_y = -600
     obstacle_speed = 7
     obstacle_width = 100
     obstacle_height = 100
-
-    flags = load_flag_images()
 
     start_time = time.time()
     game_exit = False
@@ -236,11 +206,8 @@ def game_loop():
         # Draw road
         pygame.draw.rect(game_display, black, (road_x, road_y, road_width, road_height), 2)
 
-        # Draw obstacles (flags)
-        if flags:
-            flag_image = random.choice(flags)
-            game_display.blit(flag_image, (obstacle_start_x, obstacle_start_y))
-
+        # Draw obstacle (flag image)
+        game_display.blit(obstacle_image, (obstacle_start_x, obstacle_start_y))
         obstacle_start_y += obstacle_speed
 
         # Ensure car stays within the road boundaries
@@ -275,6 +242,99 @@ def game_loop():
         if obstacle_start_y > display_height:
             obstacle_start_y = -obstacle_height
             obstacle_start_x = random.randrange(int(road_x), int(road_x) + road_width - obstacle_width)
+            obstacle_image = random.choice(flag_images)
+
+        pygame.display.update()
+        clock.tick(60)
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time - 2
+    save_score(username, elapsed_time)
+    intro_screen()# Main game loop
+    
+def game_loop():
+    username, previous_score = username_prompt()
+    car_image = car_selection_screen()
+    car_width, car_height = car_image.get_size()
+    x = (display_width - car_width) // 2
+    y = display_height * 0.8
+
+    # Load flag images
+    flag_images = load_flag_images()
+    if not flag_images:
+        print("No flag images found. Exiting.")
+        pygame.quit()
+        quit()
+
+    # Initialize obstacle with a random flag image
+    obstacle_image = random.choice(flag_images)
+    obstacle_start_x = random.randrange(int(road_x), int(road_x) + road_width - 100)
+    obstacle_start_y = -600
+    obstacle_speed = 7
+    obstacle_width = 100
+    obstacle_height = 100
+
+    start_time = time.time()
+    game_exit = False
+
+    while not game_exit:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    x -= 50
+                if event.key == pygame.K_RIGHT:
+                    x += 50
+                if event.key == pygame.K_UP:
+                    y -= 50
+                if event.key == pygame.K_DOWN:
+                    y = 50
+                                        
+        game_display.fill(white)
+
+        # Draw road
+        pygame.draw.rect(game_display, black, (road_x, road_y, road_width, road_height), 2)
+
+        # Draw obstacle (flag image)
+        game_display.blit(obstacle_image, (obstacle_start_x, obstacle_start_y))
+        obstacle_start_y += obstacle_speed
+
+        # Ensure car stays within the road boundaries
+        if x < road_x:
+            x = road_x
+        elif x > road_x + road_width - car_width:
+            x = road_x + road_width - car_width
+
+        car(x, y, car_image)
+
+        # Increase difficulty over time
+        elapsed_time = time.time() - start_time
+        obstacle_speed = 7 + int(elapsed_time // 5)
+
+        # Display timer on screen
+        timer_font = pygame.font.Font('freesansbold.ttf', 20)
+        timer_text = timer_font.render(f"Time: {elapsed_time:.2f} seconds", True, black)
+        game_display.blit(timer_text, (10, 10))
+
+        # Display previous score if exists
+        if previous_score is not None:
+            previous_score_text = timer_font.render(f"Previous record: {float(previous_score):.2f} seconds", True, black)
+            game_display.blit(previous_score_text, (10, 40))
+
+        # Collision detection with obstacles
+        if y < obstacle_start_y + obstacle_height:
+            if x > obstacle_start_x and x < obstacle_start_x + obstacle_width or x + car_width > obstacle_start_x and x + car_width < obstacle_start_x + obstacle_width:
+                crash()
+                game_exit = True
+
+        # Reset obstacle position if it goes off screen
+        if obstacle_start_y > display_height:
+            obstacle_start_y = -obstacle_height
+            obstacle_start_x = random.randrange(int(road_x), int(road_x) + road_width - obstacle_width)
+            obstacle_image = random.choice(flag_images)
 
         pygame.display.update()
         clock.tick(60)
@@ -283,6 +343,108 @@ def game_loop():
     elapsed_time = end_time - start_time - 2
     save_score(username, elapsed_time)
     intro_screen()
+# Main game loop
+def game_loop():
+    username, previous_score = username_prompt()
+    car_image = car_selection_screen()
+    car_width, car_height = car_image.get_size()
+    x = (display_width - car_width) // 2
+    y = display_height * 0.8
+
+    # Load flag images
+    flag_images = load_flag_images()
+    if not flag_images:
+        print("No flag images found. Exiting.")
+        pygame.quit()
+        quit()
+
+    # Initialize obstacle with a random flag image
+    obstacle_image = random.choice(flag_images)
+    obstacle_start_x = random.randrange(int(road_x), int(road_x) + road_width - 100)
+    obstacle_start_y = -600
+    obstacle_speed = 7
+    obstacle_width = 100
+    obstacle_height = 100
+
+    # Load and create masks for collision detection
+    car_mask = pygame.mask.from_surface(car_image)
+    obstacle_mask = pygame.mask.from_surface(obstacle_image)
+
+    start_time = time.time()
+    game_exit = False
+
+    while not game_exit:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    x -= 50
+                if event.key == pygame.K_RIGHT:
+                    x += 50
+                if event.key == pygame.K_UP:
+                    y -= 50
+                if event.key == pygame.K_DOWN:
+                    y += 50
+
+        game_display.fill(white)
+
+        # Draw road
+        pygame.draw.rect(game_display, black, (road_x, road_y, road_width, road_height), 2)
+
+        # Draw obstacle (flag image)
+        game_display.blit(obstacle_image, (obstacle_start_x, obstacle_start_y))
+        obstacle_start_y += obstacle_speed
+
+        # Ensure car stays within the road boundaries
+        if x < road_x:
+            x = road_x
+        elif x > road_x + road_width - car_width:
+            x = road_x + road_width - car_width
+
+        car(x, y, car_image)
+
+        # Increase difficulty over time
+        elapsed_time = time.time() - start_time
+        obstacle_speed = 7 + int(elapsed_time // 5)
+
+        # Display timer on screen
+        timer_font = pygame.font.Font('freesansbold.ttf', 20)
+        timer_text = timer_font.render(f"Time: {elapsed_time:.2f} seconds", True, black)
+        game_display.blit(timer_text, (10, 10))
+
+        # Display previous score if exists
+        if previous_score is not None:
+            previous_score_text = timer_font.render(f"Previous record: {float(previous_score):.2f} seconds", True, black)
+            game_display.blit(previous_score_text, (10, 40))
+
+        # Collision detection using masks
+        car_rect = pygame.Rect(x, y, car_width, car_height)
+        obstacle_rect = pygame.Rect(obstacle_start_x, obstacle_start_y, obstacle_width, obstacle_height)
+        offset = (obstacle_rect.x - car_rect.x, obstacle_rect.y - car_rect.y)
+        
+        # Check for collision using masks
+        collision_point = car_mask.overlap(obstacle_mask, offset)
+        if collision_point:
+            crash()
+            game_exit = True
+
+        # Reset obstacle position if it goes off screen
+        if obstacle_start_y > display_height:
+            obstacle_start_y = -obstacle_height
+            obstacle_start_x = random.randrange(int(road_x), int(road_x) + road_width - obstacle_width)
+            obstacle_image = random.choice(flag_images)
+
+        pygame.display.update()
+        clock.tick(60)
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time - 2
+    save_score(username, elapsed_time)
+    intro_screen()
+
 
 # Save current game time
 def save_score(username, score):
