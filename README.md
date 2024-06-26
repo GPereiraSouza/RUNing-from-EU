@@ -29,18 +29,12 @@ To get started with RUNing-from-EU, follow these steps:
     cd RUNing-from-EU
     ```
 
-2. **Create a virtual environment (optional but recommended):**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-    ```
-
-3. **Install the required dependencies:**
+2. **Install the required dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
 
-4. **Ensure you have the necessary images:**
+3. **Ensure you have the necessary images:**
     - Place car images in a folder named `cars`.
     - Place flag images in a folder named `flags`.
 
