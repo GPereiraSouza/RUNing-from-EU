@@ -4,33 +4,43 @@ import random
 import json
 import os
 
+# Initialize the Pygame library
 pygame.init()
 
+# Define some basic colors
 black = (0, 0, 0)
 white = (255, 255, 255)
 red = (255, 0, 0)
 blue = (0, 0, 255)
 green = (0, 255, 0)
 
+# Set display dimensions
 display_width = 1400
 display_height = 800
 
+# Set road dimensions and position
 road_width = 600  
 road_x = (display_width - road_width) // 2  
 road_y = 0  
 road_height = display_height  
 
+# Create a display surface
 game_display = pygame.display.set_mode((display_width, display_height))
 pygame.display.set_caption('RUNing-from-EU')
 
+# Set up a clock for controlling the frame rate
 clock = pygame.time.Clock()
 
+# Define car image folder and file names
 car_folder = 'cars'
 car_colors = ['car1.png', 'car2.png', 'car3.png', 'car4.png', 'car5.png']
 
 def load_car_images():
+    """
+    Load and scale car images from the specified folder.
+    Returns a dictionary of car images.
+    """
     cars = {}
-    
     car_width = 150
     car_height = 250
     
@@ -48,8 +58,11 @@ def load_car_images():
             return None
     return cars
 
-
 def load_flag_images():
+    """
+    Load and scale flag images from the specified folder.
+    Returns a list of flag images.
+    """
     flag_names = ['austria.png', 'belgium.png', 'finland.png', 'hungarian.png', 'ireland.png', 'netherland.png', 'portugal.png', 'spain.png']
     flags = []
     flag_folder = 'flags'  
@@ -66,35 +79,47 @@ def load_flag_images():
             print(f"Flag image {flag_name} not found in {flag_folder}")
     return flags
 
-
 def car(x, y, car_image):
+    """
+    Display the car image at the specified coordinates.
+    """
     game_display.blit(car_image, (x, y))
 
 def crash():
+    """
+    Display a crash message and pause the game.
+    """
     message_display('You Crashed!')
 
 def message_display(text):
+    """
+    Display a message in the center of the screen.
+    """
     large_text = pygame.font.Font('freesansbold.ttf', 80)
     text_surface = large_text.render(text, True, red)
     text_rect = text_surface.get_rect()
     text_rect.center = ((display_width / 2), (display_height / 2))
     game_display.blit(text_surface, text_rect)
     pygame.display.update()
-    
     time.sleep(2)  
 
 def load_scores(filename):
+    """
+    Load and return sorted scores from a JSON file.
+    """
     scores = {}
     try:
         with open(filename, 'r') as f:
             scores = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         pass  
-    
     scores_sorted = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     return scores_sorted
 
 def intro_screen():
+    """
+    Display the intro screen with score history and a button to start a new game.
+    """
     intro = True
     while intro:
         game_display.fill(white)
@@ -132,6 +157,10 @@ def intro_screen():
                 quit()
 
 def button(msg, x, y, w, h, ic, ac):
+    """
+    Create a button with hover and click effects.
+    Returns True if the button is clicked.
+    """
     mouse = pygame.mouse.get_pos()
     click = pygame.mouse.get_pressed()
 
@@ -151,6 +180,9 @@ def button(msg, x, y, w, h, ic, ac):
     return False
 
 def game_loop():
+    """
+    Main game loop where the game logic is implemented.
+    """
     username, previous_score = username_prompt()
     car_image = car_selection_screen()
     car_width, car_height = car_image.get_size()
@@ -239,8 +271,10 @@ def game_loop():
     save_score(username, elapsed_time)
     intro_screen()
 
-
 def save_score(username, score):
+    """
+    Save the score to a JSON file.
+    """
     try:
         with open('scores.json', 'r') as f:
             data = json.load(f)
@@ -253,6 +287,9 @@ def save_score(username, score):
         json.dump(data, f)
 
 def username_prompt():
+    """
+    Prompt the user to enter their username.
+    """
     username = ''
     font = pygame.font.Font('freesansbold.ttf', 32)
     input_active = True
@@ -291,6 +328,9 @@ def username_prompt():
     return username, previous_score
 
 def car_selection_screen():
+    """
+    Display the car selection screen and return the selected car image.
+    """
     cars = load_car_images()
     selected_car = None
 
@@ -323,6 +363,9 @@ def car_selection_screen():
     return selected_car
 
 def main():
+    """
+    Entry point of the game. Starts with the intro screen.
+    """
     intro_screen()
 
 if __name__ == '__main__':
